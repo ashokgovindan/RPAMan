@@ -27,6 +27,10 @@ public class CenterViewManager extends JPanel {
     private static final String DEPLOYMENTS = "DEPLOYMENTS";
     private static final String SERVICE_ACCOUNTS = "SERVICE_ACCOUNTS";
 
+    /** Pinned heights so the layout cannot squash these inputs to one line. */
+    private static final int QUERY_BOX_HEIGHT = 78;
+    private static final int COMMENTS_BOX_HEIGHT = 110;
+
     private final DatabaseManager dbManager;
     private final CardLayout cardLayout;
     private final JPanel cardsPanel;
@@ -434,21 +438,21 @@ public class CenterViewManager extends JPanel {
         formPanel.add(UiFactory.fieldLabel("Received Query"), gbc);
         gbc.insets = new Insets(4, 0, 4, 0);
         gbc.gridy = 9;
-        formPanel.add(UiFactory.scroll(receivedQueryArea), gbc);
+        formPanel.add(UiFactory.fixedHeightScroll(receivedQueryArea, QUERY_BOX_HEIGHT), gbc);
 
         gbc.gridy = 10;
         gbc.insets = new Insets(14, 0, 4, 0);
         formPanel.add(UiFactory.fieldLabel("Pending Query"), gbc);
         gbc.insets = new Insets(4, 0, 4, 0);
         gbc.gridy = 11;
-        formPanel.add(UiFactory.scroll(pendingQueryArea), gbc);
+        formPanel.add(UiFactory.fixedHeightScroll(pendingQueryArea, QUERY_BOX_HEIGHT), gbc);
 
         gbc.gridy = 12;
         gbc.insets = new Insets(14, 0, 4, 0);
         formPanel.add(UiFactory.fieldLabel("Processed Query"), gbc);
         gbc.insets = new Insets(4, 0, 4, 0);
         gbc.gridy = 13;
-        formPanel.add(UiFactory.scroll(processedQueryArea), gbc);
+        formPanel.add(UiFactory.fixedHeightScroll(processedQueryArea, QUERY_BOX_HEIGHT), gbc);
 
         // --- actions
         gbc.gridy = 14;
@@ -463,6 +467,14 @@ public class CenterViewManager extends JPanel {
         actions.add(saveConfigsBtn);
         actions.add(removeConfigBtn);
         formPanel.add(actions, gbc);
+
+        // Soaks up any spare height so GridBag keeps the rows at their
+        // natural size and top-aligned, instead of centring them.
+        gbc.gridy = 15;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        formPanel.add(Box.createGlue(), gbc);
 
         panel.add(UiFactory.formScroll(formPanel), BorderLayout.CENTER);
         return panel;
@@ -500,7 +512,7 @@ public class CenterViewManager extends JPanel {
         gbc.gridy = 3;
         gbc.insets = new Insets(4, 0, 4, 0);
         commentsArea = UiFactory.textArea(5, 20);
-        cardPanel.add(UiFactory.scroll(commentsArea), gbc);
+        cardPanel.add(UiFactory.fixedHeightScroll(commentsArea, COMMENTS_BOX_HEIGHT), gbc);
 
         gbc.gridy = 4;
         gbc.insets = new Insets(16, 0, 0, 0);
@@ -508,6 +520,12 @@ public class CenterViewManager extends JPanel {
         JButton saveBtn = UiFactory.primary("Save Details", AppIcons.save(15, "App.onAccent"));
         saveBtn.addActionListener(e -> saveTemplateDetails(true));
         cardPanel.add(saveBtn, gbc);
+
+        gbc.gridy = 5;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        cardPanel.add(Box.createGlue(), gbc);
 
         panel.add(UiFactory.formScroll(cardPanel), BorderLayout.CENTER);
         return panel;
@@ -521,8 +539,9 @@ public class CenterViewManager extends JPanel {
         applicationsPanel.removeAll();
 
         if (allApplications.isEmpty()) {
-            JLabel hint = UiFactory.subtitle(
-                    "No applications defined yet - add them in View > Settings > Applications.");
+            // HTML so the hint wraps instead of being clipped in a narrow pane
+            JLabel hint = UiFactory.subtitle("<html>No applications defined yet - "
+                    + "add them in View &gt; Settings &gt; Applications.</html>");
             applicationsPanel.add(hint);
         } else {
             for (String application : allApplications) {

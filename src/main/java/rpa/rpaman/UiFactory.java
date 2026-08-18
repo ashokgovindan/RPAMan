@@ -256,6 +256,21 @@ public final class UiFactory {
         }
     }
 
+    /**
+     * Scroll pane pinned to a fixed height.
+     * <p>
+     * A JScrollPane's minimum height is only its insets, so a GridBagLayout
+     * short of vertical space will happily squash one down to a single line.
+     * Pinning preferred and minimum together keeps multi-line inputs readable
+     * whatever the container does. Width is left free for the layout to fill.
+     */
+    public static JScrollPane fixedHeightScroll(Component view, int height) {
+        JScrollPane scrollPane = scroll(view);
+        scrollPane.setPreferredSize(new Dimension(10, height));
+        scrollPane.setMinimumSize(new Dimension(10, height));
+        return scrollPane;
+    }
+
     /** Scroll pane with no border at all — for content already inside a card. */
     public static JScrollPane bareScroll(Component view) {
         JScrollPane scrollPane = new JScrollPane(view);
