@@ -71,6 +71,12 @@ public class RPAProjectManager extends JFrame {
         RightTasksPane rightPane = new RightTasksPane(dbManager);
         JPanel leftPane = createLeftPane();
 
+        // Minimums stop a pane with wide content from squeezing its neighbour
+        // off-screen when the platform font is larger than the one here.
+        leftPane.setMinimumSize(new Dimension(200, 0));
+        centerViewManager.setMinimumSize(new Dimension(320, 0));
+        rightPane.setMinimumSize(new Dimension(280, 0));
+
         JSplitPane rightSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, centerViewManager, rightPane);
         rightSplit.setResizeWeight(0.65);
         styleSplit(rightSplit);
@@ -86,6 +92,13 @@ public class RPAProjectManager extends JFrame {
                 root.setBackground(ThemeManager.color("App.canvas", root.getBackground())));
 
         setContentPane(root);
+
+        // Place the dividers by proportion once the frame has a real size,
+        // rather than letting content preferred widths decide.
+        SwingUtilities.invokeLater(() -> {
+            mainSplit.setDividerLocation(0.22);
+            rightSplit.setDividerLocation(0.62);
+        });
     }
 
     private void styleSplit(JSplitPane split) {

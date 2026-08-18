@@ -156,9 +156,7 @@ public class DeploymentRequestDialog extends JDialog {
         gbc.gridy = y;
         form.add(movedRow, gbc);
 
-        JPanel formWrapper = UiFactory.transparent(new BorderLayout());
-        formWrapper.add(form, BorderLayout.NORTH);
-        root.add(UiFactory.bareScroll(formWrapper), BorderLayout.CENTER);
+        root.add(UiFactory.formScroll(form), BorderLayout.CENTER);
 
         // ------------------------------------------------------------ footer
         JButton submitBtn = UiFactory.primary("Submit Request",

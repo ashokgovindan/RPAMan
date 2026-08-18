@@ -109,9 +109,7 @@ public class ServiceAccountDialog extends JDialog {
         gbc.gridy = y;
         form.add(UiFactory.scroll(descriptionArea), gbc);
 
-        JPanel wrapper = UiFactory.transparent(new BorderLayout());
-        wrapper.add(form, BorderLayout.NORTH);
-        root.add(UiFactory.bareScroll(wrapper), BorderLayout.CENTER);
+        root.add(UiFactory.formScroll(form), BorderLayout.CENTER);
 
         // ------------------------------------------------------------ footer
         JButton okBtn = UiFactory.primary(editing ? "Save Changes" : "Add Account",

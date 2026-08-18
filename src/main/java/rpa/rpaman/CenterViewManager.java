@@ -464,10 +464,7 @@ public class CenterViewManager extends JPanel {
         actions.add(removeConfigBtn);
         formPanel.add(actions, gbc);
 
-        JPanel wrapperPanel = UiFactory.transparent(new BorderLayout());
-        wrapperPanel.add(formPanel, BorderLayout.NORTH);
-
-        panel.add(UiFactory.bareScroll(wrapperPanel), BorderLayout.CENTER);
+        panel.add(UiFactory.formScroll(formPanel), BorderLayout.CENTER);
         return panel;
     }
 
@@ -512,10 +509,7 @@ public class CenterViewManager extends JPanel {
         saveBtn.addActionListener(e -> saveTemplateDetails(true));
         cardPanel.add(saveBtn, gbc);
 
-        JPanel wrapper = UiFactory.transparent(new BorderLayout());
-        wrapper.add(cardPanel, BorderLayout.NORTH);
-
-        panel.add(UiFactory.bareScroll(wrapper), BorderLayout.CENTER);
+        panel.add(UiFactory.formScroll(cardPanel), BorderLayout.CENTER);
         return panel;
     }
 

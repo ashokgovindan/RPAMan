@@ -197,6 +197,65 @@ public final class UiFactory {
         return scrollPane;
     }
 
+    /**
+     * Vertical-only scroll pane for a form.
+     * <p>
+     * The view is forced to the viewport's width, so a form whose preferred
+     * width grows with the platform font compresses instead of producing a
+     * horizontal scrollbar. Use this for stacked cards; tables still need
+     * {@link #bareScroll} so wide grids can scroll sideways.
+     */
+    public static JScrollPane formScroll(Component content) {
+        WidthTrackingPanel holder = new WidthTrackingPanel();
+        holder.add(content, BorderLayout.NORTH);
+
+        JScrollPane scrollPane = new JScrollPane(holder);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setViewportBorder(null);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setOpaque(false);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
+
+    /** Panel that always matches the viewport width, never exceeding it. */
+    private static final class WidthTrackingPanel extends JPanel implements Scrollable {
+
+        WidthTrackingPanel() {
+            super(new BorderLayout());
+            setOpaque(false);
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return orientation == SwingConstants.VERTICAL
+                    ? Math.max(16, visibleRect.height - 24)
+                    : Math.max(16, visibleRect.width - 24);
+        }
+
+        /** The point of this class: never wider than the viewport. */
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
+
     /** Scroll pane with no border at all — for content already inside a card. */
     public static JScrollPane bareScroll(Component view) {
         JScrollPane scrollPane = new JScrollPane(view);

@@ -44,9 +44,7 @@ public class AboutDialog extends JDialog {
         lower.add(buildCreditsCard(), BorderLayout.CENTER);
         content.add(lower, BorderLayout.CENTER);
 
-        JPanel scrollHolder = UiFactory.transparent(new BorderLayout());
-        scrollHolder.add(content, BorderLayout.NORTH);
-        root.add(UiFactory.bareScroll(scrollHolder), BorderLayout.CENTER);
+        root.add(UiFactory.formScroll(content), BorderLayout.CENTER);
 
         // ------------------------------------------------------------ footer
         JButton copyBtn = UiFactory.secondary("Copy Details",
