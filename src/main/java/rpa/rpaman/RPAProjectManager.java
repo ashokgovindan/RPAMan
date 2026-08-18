@@ -30,6 +30,7 @@ public class RPAProjectManager extends JFrame {
     private DefaultMutableTreeNode rootNode;
     private JTree tree;
     private CenterViewManager centerViewManager;
+    private JSplitPane mainSplit;
     private JMenu urlsMenu;
     private JTextField projectSearchField;
     private String treeFilter = "";
@@ -43,10 +44,12 @@ public class RPAProjectManager extends JFrame {
         this.dbManager = dbManager;
 
         setTitle(AppInfo.windowTitle());
+        // Size used when the window is restored down from maximised
         setSize(1400, 820);
         setMinimumSize(new Dimension(1040, 640));
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         // Persist whatever is on screen before the window goes away
         addWindowListener(new WindowAdapter() {
@@ -81,7 +84,7 @@ public class RPAProjectManager extends JFrame {
         rightSplit.setResizeWeight(0.65);
         styleSplit(rightSplit);
 
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPane, rightSplit);
+        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPane, rightSplit);
         mainSplit.setResizeWeight(0.2);
         styleSplit(mainSplit);
 
@@ -93,11 +96,33 @@ public class RPAProjectManager extends JFrame {
 
         setContentPane(root);
 
-        // Place the dividers by proportion once the frame has a real size,
-        // rather than letting content preferred widths decide.
+        // Place the dividers once the frame has a real size, rather than
+        // letting content preferred widths decide.
+        SwingUtilities.invokeLater(() -> rightSplit.setDividerLocation(0.62));
+        fitLeftPaneToTree();
+    }
+
+    /**
+     * Widens the left pane so the deepest expanded tree label fits, within
+     * sensible bounds. Run whenever the tree's structure changes.
+     */
+    private void fitLeftPaneToTree() {
         SwingUtilities.invokeLater(() -> {
-            mainSplit.setDividerLocation(0.22);
-            rightSplit.setDividerLocation(0.62);
+            if (mainSplit == null || tree == null || getWidth() <= 0) return;
+
+            int widest = 0;
+            for (int row = 0; row < tree.getRowCount(); row++) {
+                Rectangle bounds = tree.getRowBounds(row);
+                if (bounds != null) {
+                    widest = Math.max(widest, bounds.x + bounds.width);
+                }
+            }
+            if (widest == 0) return;
+
+            // Row width plus the card padding, scroll pane inset and scrollbar
+            int needed = widest + (2 * UiFactory.GAP) + 12 + 24;
+            int ceiling = Math.max(260, (int) (getWidth() * 0.34));
+            mainSplit.setDividerLocation(Math.max(220, Math.min(needed, ceiling)));
         });
     }
 
@@ -427,6 +452,7 @@ public class RPAProjectManager extends JFrame {
         if (projectSearchField != null) projectSearchField.setText("");
         treeFilter = "";
         rebuildTreeNodes();
+        fitLeftPaneToTree();
         selectProjectInTree(name);
     }
 
@@ -523,6 +549,7 @@ public class RPAProjectManager extends JFrame {
     private void reloadTree() {
         rpaTemplateNodes = dbManager.getTemplateItems();
         rebuildTreeNodes();
+        fitLeftPaneToTree();
         centerViewManager.showDefault();
     }
 
