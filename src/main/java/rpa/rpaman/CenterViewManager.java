@@ -190,6 +190,22 @@ public class CenterViewManager extends JPanel {
         }
     }
 
+    /** Reloads the change requests view when the given project is on screen. */
+    public void refreshChangeRequests(String projectName) {
+        if (loadedCrProject != null && loadedCrProject.equals(projectName)
+                && changeRequestsPanel != null) {
+            changeRequestsPanel.load(loadedCrProject);
+        }
+    }
+
+    /** Reloads the service accounts view when the given project is on screen. */
+    public void refreshServiceAccounts(String projectName) {
+        if (loadedServiceAccountProject != null && loadedServiceAccountProject.equals(projectName)
+                && serviceAccountsPanel != null) {
+            serviceAccountsPanel.load(loadedServiceAccountProject);
+        }
+    }
+
     /** Loads and displays the completion date and comments of one template node. */
     public void showTemplateDetails(String projectName, String templateName) {
         flushPendingEdits();

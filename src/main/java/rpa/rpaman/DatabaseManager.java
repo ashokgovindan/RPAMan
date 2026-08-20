@@ -980,6 +980,22 @@ public class DatabaseManager {
         addColumnIfMissing(conn, "ServiceAccounts", "app_name", "TEXT");
         addColumnIfMissing(conn, "ServiceAccounts", "email", "TEXT");
         addColumnIfMissing(conn, "ServiceAccounts", "description", "TEXT");
+
+        // The QA environment was renamed to TEST; bring existing rows across so
+        // they still match an entry in the dropdown.
+        renameEnvironment(conn, "Deployments", "QA", "TEST");
+        renameEnvironment(conn, "ServiceAccounts", "QA", "TEST");
+    }
+
+    private void renameEnvironment(Connection conn, String table, String from, String to) {
+        try (PreparedStatement pstmt = conn.prepareStatement(
+                "UPDATE " + table + " SET environment = ? WHERE environment = ?")) {
+            pstmt.setString(1, to);
+            pstmt.setString(2, from);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Could not rename environment in " + table + ": " + e.getMessage());
+        }
     }
 
     private void addColumnIfMissing(Connection conn, String table, String column, String type) {
@@ -1224,6 +1240,36 @@ public class DatabaseManager {
         cr.notes = safe(rs.getString("notes"));
         cr.assignedTo = safe(rs.getString("assigned_to"));
         return cr;
+    }
+
+    /** Inserts a single change request, e.g. from the create form. */
+    public boolean addChangeRequest(ChangeRequest cr) {
+        String sql = "INSERT INTO ChangeRequests (project_name, cr_number, title, requested_by, " +
+                "received_date, priority, status, target_date, delivered_date, deployment_id, " +
+                "notes, assigned_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, safe(cr.projectName));
+            pstmt.setString(2, safe(cr.crNumber));
+            pstmt.setString(3, safe(cr.title));
+            pstmt.setString(4, safe(cr.requestedBy));
+            pstmt.setString(5, safe(cr.receivedDate));
+            pstmt.setString(6, safe(cr.priority));
+            pstmt.setString(7, safe(cr.status));
+            pstmt.setString(8, safe(cr.targetDate));
+            pstmt.setString(9, safe(cr.deliveredDate));
+            pstmt.setInt(10, cr.deploymentId);
+            pstmt.setString(11, safe(cr.notes));
+            pstmt.setString(12, safe(cr.assignedTo));
+            pstmt.executeUpdate();
+            try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                if (keys.next()) cr.id = keys.getInt(1);
+            }
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /** Nothing references change request ids, so the list is replaced wholesale. */

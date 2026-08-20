@@ -64,10 +64,6 @@ public class ChangeRequestsPanel extends JPanel {
         tableCard.add(UiFactory.bareScroll(table), BorderLayout.CENTER);
 
         // ---------------------------------------------------------- toolbar
-        JButton addBtn = UiFactory.secondary("Add Change Request",
-                AppIcons.plus(15, "App.subtleForeground"));
-        addBtn.addActionListener(e -> addRow());
-
         JButton removeBtn = UiFactory.secondary("Remove Selected",
                 AppIcons.trash(15, "App.subtleForeground"));
         removeBtn.addActionListener(e -> removeSelectedRow());
@@ -78,7 +74,6 @@ public class ChangeRequestsPanel extends JPanel {
 
         JPanel buttons = UiFactory.transparent(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttons.add(saveBtn);
-        buttons.add(addBtn);
         buttons.add(removeBtn);
 
         summaryLabel = UiFactory.subtitle("");
@@ -188,20 +183,6 @@ public class ChangeRequestsPanel extends JPanel {
 
     // --------------------------------------------------------------- editing
 
-    private void addRow() {
-        if (loadedProject == null) return;
-        stopEditing();
-        tableModel.addRow(new Object[]{
-                "", "", "", "", "", "Medium", "New", "", "", NO_DEPLOYMENT, ""});
-
-        int last = tableModel.getRowCount() - 1;
-        table.setRowSelectionInterval(last, last);
-        table.scrollRectToVisible(table.getCellRect(last, 0, true));
-        table.editCellAt(last, 0);
-        Component editor = table.getEditorComponent();
-        if (editor != null) editor.requestFocusInWindow();
-    }
-
     private void removeSelectedRow() {
         int row = table.getSelectedRow();
         if (row < 0) {
@@ -238,7 +219,7 @@ public class ChangeRequestsPanel extends JPanel {
         }
         summaryLabel.setText(total + " change request" + (total == 1 ? "" : "s")
                 + "  -  " + open + " open, " + delivered + " delivered."
-                + "   Dates use yyyy-MM-dd.");
+                + "   Add new ones from the Change Requests menu.   Dates use yyyy-MM-dd.");
     }
 
     private String text(int row, int column) {

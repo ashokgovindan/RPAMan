@@ -7,14 +7,26 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.regex.Pattern;
 
 public class RightTasksPane extends JPanel {
 
+    /** What the status dropdown returns to once an entry is saved. */
+    private static final String DEFAULT_STATUS = "To Do";
+
     private final DatabaseManager dbManager;
     private final DefaultTableModel tableModel;
     private final JTable taskTable;
+
+    // Form controls, held so the edit and reset helpers can reach them
+    private final JTextField descField;
+    private final DatePicker datePicker;
+    private final JComboBox<String> statusCombo;
+    private final JButton addTaskBtn;
+
     private int selectedTaskId = -1;
 
     public RightTasksPane(DatabaseManager dbManager) {
@@ -91,10 +103,10 @@ public class RightTasksPane extends JPanel {
         gbc.insets = new Insets(4, 0, 4, 0);
         gbc.weightx = 1.0;
 
-        JTextField descField = UiFactory.textField("Task description");
-        DatePicker datePicker = UiFactory.datePicker();
-        JComboBox<String> statusCombo = UiFactory.comboBox(new String[]{"To Do", "In Progress", "Done"});
-        JButton addTaskBtn = UiFactory.primary("Add Task", AppIcons.plus(15, "App.onAccent"));
+        descField = UiFactory.textField("Task description");
+        datePicker = UiFactory.datePicker();
+        statusCombo = UiFactory.comboBox(new String[]{DEFAULT_STATUS, "In Progress", "Done"});
+        addTaskBtn = UiFactory.primary("Add Task", AppIcons.plus(15, "App.onAccent"));
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -124,24 +136,14 @@ public class RightTasksPane extends JPanel {
         loadTasksFromDatabase();
 
         // --------------------------------------------------------- behaviour
-        taskTable.getSelectionModel().addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting() || taskTable.getSelectedRow() == -1) return;
-
-            // The table is filtered/sortable, so map the view row back to the model
-            int row = taskTable.convertRowIndexToModel(taskTable.getSelectedRow());
-            selectedTaskId = (int) tableModel.getValueAt(row, 0);
-            descField.setText(asText(tableModel.getValueAt(row, 1)));
-
-            String dueDate = asText(tableModel.getValueAt(row, 2));
-            if (dueDate.isEmpty()) {
-                datePicker.clear();
-            } else {
-                datePicker.setText(dueDate);
+        // Double-click loads a task into the form; a single click just selects,
+        // so clicking around the list no longer disturbs what is being typed.
+        taskTable.setToolTipText("Double-click a task to edit it");
+        taskTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) editSelectedTask();
             }
-
-            statusCombo.setSelectedItem(tableModel.getValueAt(row, 3));
-            addTaskBtn.setText("Update Task");
-            addTaskBtn.setIcon(AppIcons.check(15, "App.onAccent"));
         });
 
         addTaskBtn.addActionListener(e -> {
@@ -161,16 +163,47 @@ public class RightTasksPane extends JPanel {
                 dbManager.addTask(desc, date, status);
             } else {
                 dbManager.updateTask(selectedTaskId, desc, date, status);
-                selectedTaskId = -1;
             }
 
-            addTaskBtn.setText("Add Task");
-            addTaskBtn.setIcon(AppIcons.plus(15, "App.onAccent"));
-            descField.setText("");
-            datePicker.clear();
-            taskTable.clearSelection();
+            resetForm();
             loadTasksFromDatabase();
         });
+    }
+
+    /** Loads the double-clicked task into the form for editing. */
+    private void editSelectedTask() {
+        int viewRow = taskTable.getSelectedRow();
+        if (viewRow < 0) return;
+
+        // The table is filtered/sortable, so map the view row back to the model
+        int row = taskTable.convertRowIndexToModel(viewRow);
+        selectedTaskId = (int) tableModel.getValueAt(row, 0);
+        descField.setText(asText(tableModel.getValueAt(row, 1)));
+
+        String dueDate = asText(tableModel.getValueAt(row, 2));
+        if (dueDate.isEmpty()) {
+            datePicker.clear();
+        } else {
+            datePicker.setText(dueDate);
+        }
+
+        // Keep the task's real status so it is visible and only changes on purpose
+        statusCombo.setSelectedItem(tableModel.getValueAt(row, 3));
+
+        addTaskBtn.setText("Update Task");
+        addTaskBtn.setIcon(AppIcons.check(15, "App.onAccent"));
+        descField.requestFocusInWindow();
+    }
+
+    /** Returns the form to its defaults, ready for the next new task. */
+    private void resetForm() {
+        selectedTaskId = -1;
+        addTaskBtn.setText("Add Task");
+        addTaskBtn.setIcon(AppIcons.plus(15, "App.onAccent"));
+        descField.setText("");
+        datePicker.clear();
+        statusCombo.setSelectedItem(DEFAULT_STATUS);
+        taskTable.clearSelection();
     }
 
     private static String asText(Object value) {

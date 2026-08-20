@@ -9,6 +9,7 @@ import java.awt.*;
  */
 public class ServiceAccountDialog extends JDialog {
 
+    private final JComboBox<String> projectCombo;
     private final JComboBox<String> environmentCombo;
     private final JTextField accountIdField;
     private final JTextField aliasField;
@@ -19,10 +20,18 @@ public class ServiceAccountDialog extends JDialog {
     private final ServiceAccount account;
     private boolean saved;
 
-    /**
-     * @param existing the account being edited, or null to create a new one
-     */
+    /** Fixed-project form, used from a project's Service Accounts node. */
     public ServiceAccountDialog(Window owner, String projectName, ServiceAccount existing) {
+        this(owner, null, projectName, existing);
+    }
+
+    /**
+     * @param projectChoices projects to offer in a dropdown, or null to keep
+     *                       {@code projectName} fixed
+     * @param existing       the account being edited, or null to create one
+     */
+    public ServiceAccountDialog(Window owner, java.util.List<String> projectChoices,
+                                String projectName, ServiceAccount existing) {
         super(owner, existing == null ? "Add Service Account" : "Edit Service Account",
                 ModalityType.APPLICATION_MODAL);
 
@@ -30,8 +39,8 @@ public class ServiceAccountDialog extends JDialog {
         this.account = editing ? existing : new ServiceAccount();
         this.account.projectName = projectName;
 
-        setSize(560, 520);
-        setMinimumSize(new Dimension(460, 460));
+        setSize(660, 760);
+        setMinimumSize(new Dimension(540, 600));
         setLocationRelativeTo(owner);
 
         JPanel root = UiFactory.pane(new BorderLayout(0, UiFactory.GAP));
@@ -56,8 +65,25 @@ public class ServiceAccountDialog extends JDialog {
 
         int y = 0;
 
+        // Only shown when the caller has not already fixed the project
+        if (projectChoices != null && !projectChoices.isEmpty()) {
+            gbc.gridy = y++;
+            form.add(UiFactory.fieldLabel("RPA Name"), gbc);
+            projectCombo = UiFactory.comboBox(projectChoices.toArray(new String[0]));
+            if (projectName != null && projectChoices.contains(projectName)) {
+                projectCombo.setSelectedItem(projectName);
+            }
+            gbc.gridy = y++;
+            form.add(projectCombo, gbc);
+
+            gbc.insets = new Insets(14, 0, 4, 0);
+        } else {
+            projectCombo = null;
+        }
+
         gbc.gridy = y++;
         form.add(UiFactory.fieldLabel("Environment"), gbc);
+        gbc.insets = new Insets(4, 0, 4, 0);
         environmentCombo = UiFactory.comboBox(ServiceAccount.ENVIRONMENTS);
         environmentCombo.setSelectedItem(
                 account.environment.isEmpty() ? "PROD" : account.environment);
@@ -144,6 +170,17 @@ public class ServiceAccountDialog extends JDialog {
                     "Account ID required", JOptionPane.WARNING_MESSAGE);
             accountIdField.requestFocusInWindow();
             return;
+        }
+
+        if (projectCombo != null) {
+            Object project = projectCombo.getSelectedItem();
+            if (project == null || project.toString().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Select the RPA this account belongs to.",
+                        "RPA required", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            account.projectName = project.toString();
         }
 
         account.environment = String.valueOf(environmentCombo.getSelectedItem());

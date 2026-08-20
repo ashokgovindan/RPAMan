@@ -62,20 +62,30 @@ public class ServiceAccountsPanel extends JPanel {
         tableCard.add(UiFactory.bareScroll(table), BorderLayout.CENTER);
 
         // ---------------------------------------------------------- toolbar
-        JButton addBtn = UiFactory.primary("Add", AppIcons.plus(15, "App.onAccent"));
-        addBtn.addActionListener(e -> addAccount());
-
-        JButton editBtn = UiFactory.secondary("Edit", AppIcons.sliders(15, "App.subtleForeground"));
+        JButton editBtn = UiFactory.primary("Edit", AppIcons.sliders(15, "App.onAccent"));
         editBtn.addActionListener(e -> editSelected());
 
         JButton deleteBtn = UiFactory.secondary("Delete",
                 AppIcons.trash(15, "App.subtleForeground"));
         deleteBtn.addActionListener(e -> deleteSelected());
 
+        JButton copySelectedBtn = UiFactory.secondary("Copy Selected",
+                AppIcons.clipboard(15, "App.subtleForeground"));
+        copySelectedBtn.setToolTipText(
+                "<html>Copy the selected account as:<br>"
+                        + "RPA Name, Account ID, Alias, App Name</html>");
+        copySelectedBtn.addActionListener(e -> copySelectedDetails());
+
+        JButton copyBtn = UiFactory.secondary("Copy as CSV",
+                AppIcons.clipboard(15, "App.subtleForeground"));
+        copyBtn.setToolTipText("Copy the selected account, or all of them when nothing is selected");
+        copyBtn.addActionListener(e -> copyToClipboard());
+
         JPanel buttons = UiFactory.transparent(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.add(addBtn);
         buttons.add(editBtn);
         buttons.add(deleteBtn);
+        buttons.add(copySelectedBtn);
+        buttons.add(copyBtn);
 
         summaryLabel = UiFactory.subtitle("");
         JPanel toolbar = UiFactory.transparent(new BorderLayout(0, 6));
@@ -104,20 +114,6 @@ public class ServiceAccountsPanel extends JPanel {
     }
 
     // --------------------------------------------------------------- actions
-
-    private void addAccount() {
-        if (loadedProject == null) return;
-
-        ServiceAccountDialog dialog = new ServiceAccountDialog(
-                SwingUtilities.getWindowAncestor(this), loadedProject, null);
-        dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
-
-        if (dbManager.addServiceAccount(dialog.getAccount())) {
-            load(loadedProject);
-            selectByAccountId(dialog.getAccount().accountId);
-        }
-    }
 
     private void editSelected() {
         ServiceAccount selected = selectedAccount();
@@ -156,6 +152,50 @@ public class ServiceAccountsPanel extends JPanel {
         load(loadedProject);
     }
 
+    /** Copies just the selected account as a labelled block. */
+    private void copySelectedDetails() {
+        ServiceAccount selected = selectedAccount();
+        if (selected == null) {
+            JOptionPane.showMessageDialog(this, "Select a service account to copy.",
+                    "Nothing selected", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        CsvClipboard.copyPlain(this, selected.detailsBlock(), "the service account details");
+    }
+
+    /**
+     * Copies the selected account, or every account for the project when
+     * nothing is selected. The RPA name leads each row so the CSV still makes
+     * sense once it is out of the app.
+     */
+    private void copyToClipboard() {
+        if (accounts.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "There are no service accounts to copy.",
+                    "Nothing to copy", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        ServiceAccount selected = selectedAccount();
+        List<ServiceAccount> toCopy = new ArrayList<>();
+        if (selected != null) {
+            toCopy.add(selected);
+        } else {
+            toCopy.addAll(accounts);
+        }
+
+        StringBuilder csv = new StringBuilder();
+        csv.append(CsvClipboard.row(
+                "RPA Name", "Environment", "Account ID", "Alias", "App Name", "Email", "Description"));
+        for (ServiceAccount account : toCopy) {
+            csv.append(CsvClipboard.row(
+                    account.projectName, account.environment, account.accountId,
+                    account.alias, account.appName, account.email, account.description));
+        }
+
+        CsvClipboard.copy(this, csv.toString(),
+                CsvClipboard.plural(toCopy.size(), "service account"));
+    }
+
     private ServiceAccount selectedAccount() {
         int row = table.getSelectedRow();
         if (row < 0) return null;
@@ -176,6 +216,7 @@ public class ServiceAccountsPanel extends JPanel {
     private void updateSummary() {
         int total = accounts.size();
         summaryLabel.setText(total + " service account" + (total == 1 ? "" : "s")
-                + ".   Double-click a row to edit.   Tracking only - no passwords are stored.");
+                + ".   Double-click a row to edit.   Add new ones from the Service Accounts menu."
+                + "   Tracking only - no passwords are stored.");
     }
 }

@@ -3,7 +3,6 @@ package rpa.rpaman;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -390,7 +389,8 @@ public class DevelopersPanel extends JPanel {
         List<AdhocItem> allAdhoc = dbManager.getAdhocItems(null);
 
         StringBuilder csv = new StringBuilder();
-        csv.append("Emp ID,Name,Email,Active,Projects,Change Requests,Open Adhoc,Assigned Projects\n");
+        csv.append(CsvClipboard.row("Emp ID", "Name", "Email", "Active",
+                "Projects", "Change Requests", "Open Adhoc", "Assigned Projects"));
 
         for (Developer developer : all) {
             List<String> projects = new ArrayList<>();
@@ -410,38 +410,18 @@ public class DevelopersPanel extends JPanel {
                 }
             }
 
-            csv.append(escape(developer.empId)).append(',')
-                    .append(escape(developer.name)).append(',')
-                    .append(escape(developer.email)).append(',')
-                    .append(developer.active ? "Yes" : "No").append(',')
-                    .append(projects.size()).append(',')
-                    .append(crCount).append(',')
-                    .append(openAdhoc).append(',')
-                    .append(escape(String.join("; ", projects)))
-                    .append('\n');
+            csv.append(CsvClipboard.row(
+                    developer.empId,
+                    developer.name,
+                    developer.email,
+                    developer.active ? "Yes" : "No",
+                    String.valueOf(projects.size()),
+                    String.valueOf(crCount),
+                    String.valueOf(openAdhoc),
+                    String.join("; ", projects)));
         }
 
-        try {
-            Toolkit.getDefaultToolkit().getSystemClipboard()
-                    .setContents(new StringSelection(csv.toString()), null);
-            JOptionPane.showMessageDialog(this,
-                    "Copied " + all.size() + " developer" + (all.size() == 1 ? "" : "s")
-                            + " to the clipboard as CSV.",
-                    "Copied", JOptionPane.INFORMATION_MESSAGE);
-        } catch (RuntimeException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Could not write to the clipboard:\n" + ex.getMessage(),
-                    "Copy failed", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /** Quotes a CSV field only when it needs it, doubling any inner quotes. */
-    private static String escape(String value) {
-        String text = value == null ? "" : value;
-        if (text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")) {
-            return '"' + text.replace("\"", "\"\"") + '"';
-        }
-        return text;
+        CsvClipboard.copy(this, csv.toString(), CsvClipboard.plural(all.size(), "developer"));
     }
 
     private void selectByName(String name) {

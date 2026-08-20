@@ -11,7 +11,7 @@ public class Deployment {
             "Deployed", "Failed", "Rolled Back", "Cancelled"
     };
 
-    public static final String[] ENVIRONMENTS = {"DEV", "QA", "UAT", "PROD"};
+    public static final String[] ENVIRONMENTS = {"DEV", "TEST", "UAT", "PROD"};
 
     /** Terminal statuses: the request has run its course, successfully or not. */
     private static final String[] CLOSED = {"Deployed", "Failed", "Rolled Back", "Cancelled"};

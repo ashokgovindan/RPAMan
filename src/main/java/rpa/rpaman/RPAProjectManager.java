@@ -391,6 +391,25 @@ public class RPAProjectManager extends JFrame {
                 AppIcons.inbox(16, "App.subtleForeground"));
         allChangeRequestsItem.addActionListener(e -> openChangeRequestsReport());
         changeRequestsMenu.add(allChangeRequestsItem);
+        changeRequestsMenu.addSeparator();
+
+        JMenuItem addChangeRequestItem = new JMenuItem("Add Change Request...",
+                AppIcons.plus(16, "App.subtleForeground"));
+        addChangeRequestItem.addActionListener(e -> addChangeRequest());
+        changeRequestsMenu.add(addChangeRequestItem);
+
+        // --- top-level Service Accounts menu
+        JMenu serviceAccountsMenu = new JMenu("Service Accounts");
+        JMenuItem allServiceAccountsItem = new JMenuItem("All Service Accounts...",
+                AppIcons.key(16, "App.subtleForeground"));
+        allServiceAccountsItem.addActionListener(e -> openServiceAccountsReport());
+        serviceAccountsMenu.add(allServiceAccountsItem);
+        serviceAccountsMenu.addSeparator();
+
+        JMenuItem addServiceAccountItem = new JMenuItem("Add Service Account...",
+                AppIcons.plus(16, "App.subtleForeground"));
+        addServiceAccountItem.addActionListener(e -> addServiceAccount());
+        serviceAccountsMenu.add(addServiceAccountItem);
 
         // --- top-level Deployments menu
         JMenu deploymentsMenu = new JMenu("Deployments");
@@ -414,6 +433,7 @@ public class RPAProjectManager extends JFrame {
         menuBar.add(fileMenu);
         menuBar.add(changeRequestsMenu);
         menuBar.add(deploymentsMenu);
+        menuBar.add(serviceAccountsMenu);
         menuBar.add(urlsMenu);
         menuBar.add(viewMenu);
         menuBar.add(helpMenu);
@@ -490,10 +510,74 @@ public class RPAProjectManager extends JFrame {
 
     // ------------------------------------------------------------- settings
 
+    /** Raises a change request against any RPA, chosen in the form. */
+    private void addChangeRequest() {
+        if (centerViewManager != null) centerViewManager.flushPendingEdits();
+
+        if (projectNames.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Create a project first via File > New Project.",
+                    "No projects", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        ChangeRequestDialog dialog =
+                new ChangeRequestDialog(this, dbManager, selectedProjectName());
+        dialog.setVisible(true);
+        if (!dialog.isSaved()) return;
+
+        ChangeRequest created = dialog.getChangeRequest();
+        if (dbManager.addChangeRequest(created) && centerViewManager != null) {
+            centerViewManager.refreshChangeRequests(created.projectName);
+        }
+    }
+
+    /** Adds a service account to any RPA, chosen in the form. */
+    private void addServiceAccount() {
+        if (centerViewManager != null) centerViewManager.flushPendingEdits();
+
+        if (projectNames.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Create a project first via File > New Project.",
+                    "No projects", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        ServiceAccountDialog dialog = new ServiceAccountDialog(
+                this, projectNames, selectedProjectName(), null);
+        dialog.setVisible(true);
+        if (!dialog.isSaved()) return;
+
+        ServiceAccount created = dialog.getAccount();
+        if (dbManager.addServiceAccount(created) && centerViewManager != null) {
+            centerViewManager.refreshServiceAccounts(created.projectName);
+        }
+    }
+
+    /** Project of the selected tree node, so the forms open pre-filled. */
+    private String selectedProjectName() {
+        if (tree == null) return null;
+        DefaultMutableTreeNode node =
+                (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+        while (node != null && !node.isRoot()) {
+            if (node.getUserObject() instanceof String) {
+                return node.getUserObject().toString();
+            }
+            node = (DefaultMutableTreeNode) node.getParent();
+        }
+        return null;
+    }
+
     /** All change requests, every project, split by open vs closed. */
     private void openChangeRequestsReport() {
         if (centerViewManager != null) centerViewManager.flushPendingEdits();
         new ChangeRequestsReportDialog(this, dbManager).setVisible(true);
+    }
+
+    /** Every service account across every project, in one filterable list. */
+    private void openServiceAccountsReport() {
+        if (centerViewManager != null) centerViewManager.flushPendingEdits();
+        new ServiceAccountsReportDialog(this, dbManager, this::addServiceAccount).setVisible(true);
     }
 
     /** All deployment requests, every project, split by open vs closed. */

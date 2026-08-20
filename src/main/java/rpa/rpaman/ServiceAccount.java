@@ -8,7 +8,7 @@ package rpa.rpaman;
  */
 public class ServiceAccount {
 
-    public static final String[] ENVIRONMENTS = {"DEV", "QA", "UAT", "PROD"};
+    public static final String[] ENVIRONMENTS = {"DEV", "TEST", "UAT", "PROD"};
 
     /** Database id; 0 means the row has not been saved yet. */
     public int id;
@@ -20,4 +20,15 @@ public class ServiceAccount {
     public String appName = "";
     public String email = "";
     public String description = "";
+
+    /**
+     * Labelled block for pasting into a ticket, chat or email. Deliberately a
+     * short subset — the identifying fields, not the whole record.
+     */
+    public String detailsBlock() {
+        return "RPA Name: " + projectName + "\n"
+                + "Account ID: " + accountId + "\n"
+                + "Alias: " + alias + "\n"
+                + "App Name: " + appName;
+    }
 }
