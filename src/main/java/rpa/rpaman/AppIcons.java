@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Ellipse2D;
@@ -13,6 +14,9 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Lightweight, theme-aware vector icons drawn with Java2D.
@@ -37,6 +41,66 @@ public final class AppIcons {
 
     public static Icon of(int size, Color color, Draw draw) {
         return new VectorIcon(size, null, color, draw);
+    }
+
+    // ---------------------------------------------------------- app icon
+
+    /**
+     * Multi-resolution robot icon for the application title bar and taskbar.
+     * Returns 16, 32, 48 and 64 px images so every context picks a crisp size.
+     */
+    public static List<Image> appWindowIcons() {
+        return Arrays.asList(
+                renderAppIcon(16), renderAppIcon(32),
+                renderAppIcon(48), renderAppIcon(64));
+    }
+
+    private static Image renderAppIcon(int size) {
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            double s = size / 24.0;
+            g.scale(s, s);
+
+            Color accent = ThemeManager.color("App.accent", new Color(0x4A90D9));
+            Color face   = ThemeManager.color("App.cardSurface", new Color(0xE8EDF2));
+
+            // Head (filled rounded rect)
+            g.setColor(accent);
+            g.fill(new RoundRectangle2D.Double(3, 7, 18, 14, 5, 5));
+
+            // Antenna stalk and ball
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.draw(new Line2D.Double(12, 7, 12, 3.5));
+            g.fill(new Ellipse2D.Double(10.2, 1.8, 3.6, 3.6));
+
+            // Eyes (white rounded squares)
+            g.setColor(face);
+            g.fill(new RoundRectangle2D.Double(5.5, 10, 4.6, 4.2, 2, 2));
+            g.fill(new RoundRectangle2D.Double(13.9, 10, 4.6, 4.2, 2, 2));
+
+            // Pupils
+            g.setColor(accent.darker().darker());
+            g.fill(new Ellipse2D.Double(7, 11, 2.2, 2.2));
+            g.fill(new Ellipse2D.Double(15.3, 11, 2.2, 2.2));
+
+            // Mouth grille (three horizontal lines)
+            g.setColor(face);
+            g.setStroke(new BasicStroke(1.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.draw(new Line2D.Double(8.5, 17, 15.5, 17));
+            g.draw(new Line2D.Double(8.5, 19, 15.5, 19));
+
+            // Ear bolts
+            g.setColor(accent.brighter());
+            g.fill(new Ellipse2D.Double(1.2, 12.5, 2.6, 2.6));
+            g.fill(new Ellipse2D.Double(20.2, 12.5, 2.6, 2.6));
+        } finally {
+            g.dispose();
+        }
+        return img;
     }
 
     // ------------------------------------------------------------------ icons
@@ -391,6 +455,38 @@ public final class AppIcons {
             g.draw(triangle);
             line(g, 12, 9.6, 12, 14.6);
             dot(g, 12, 17.4, 1.05);
+        });
+    }
+
+    public static Icon expandAll(int size, String key) {
+        return of(size, key, g -> {
+            // Two stacked downward chevrons
+            Path2D top = new Path2D.Double();
+            top.moveTo(5, 5.5);
+            top.lineTo(12, 11);
+            top.lineTo(19, 5.5);
+            g.draw(top);
+            Path2D bot = new Path2D.Double();
+            bot.moveTo(5, 13);
+            bot.lineTo(12, 18.5);
+            bot.lineTo(19, 13);
+            g.draw(bot);
+        });
+    }
+
+    public static Icon collapseAll(int size, String key) {
+        return of(size, key, g -> {
+            // Two stacked rightward chevrons
+            Path2D top = new Path2D.Double();
+            top.moveTo(5.5, 5);
+            top.lineTo(11, 12);
+            top.lineTo(5.5, 19);
+            g.draw(top);
+            Path2D bot = new Path2D.Double();
+            bot.moveTo(13, 5);
+            bot.lineTo(18.5, 12);
+            bot.lineTo(13, 19);
+            g.draw(bot);
         });
     }
 

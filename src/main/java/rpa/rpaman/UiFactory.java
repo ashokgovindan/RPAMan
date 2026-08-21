@@ -73,6 +73,10 @@ public final class UiFactory {
      * table all start on the same line, no matter what the second row holds.
      */
     public static JPanel headerBlock(JLabel title, JComponent secondRow) {
+        return headerBlock((JComponent) title, secondRow);
+    }
+
+    public static JPanel headerBlock(JComponent title, JComponent secondRow) {
         JPanel panel = transparent(new BorderLayout(0, HEADER_GAP));
         panel.add(title, BorderLayout.NORTH);
 

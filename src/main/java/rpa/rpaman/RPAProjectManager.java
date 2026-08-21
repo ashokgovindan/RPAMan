@@ -50,6 +50,7 @@ public class RPAProjectManager extends JFrame {
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setIconImages(AppIcons.appWindowIcons());
 
         // Persist whatever is on screen before the window goes away
         addWindowListener(new WindowAdapter() {
@@ -138,6 +139,25 @@ public class RPAProjectManager extends JFrame {
 
         JLabel titleLabel = UiFactory.sectionTitle("Projects", AppIcons.folder(17, "App.accent"));
 
+        JButton expandAllBtn = UiFactory.iconButton(
+                AppIcons.expandAll(16, "App.subtleForeground"), "Expand All");
+        expandAllBtn.addActionListener(e -> {
+            for (int i = 0; i < tree.getRowCount(); i++) tree.expandRow(i);
+        });
+
+        JButton collapseAllBtn = UiFactory.iconButton(
+                AppIcons.collapseAll(16, "App.subtleForeground"), "Collapse All");
+        collapseAllBtn.addActionListener(e -> {
+            for (int i = tree.getRowCount() - 1; i >= 1; i--) tree.collapseRow(i);
+        });
+
+        JPanel titleRow = UiFactory.transparent(new BorderLayout());
+        titleRow.add(titleLabel, BorderLayout.CENTER);
+        JPanel btnPanel = UiFactory.transparent(new FlowLayout(FlowLayout.RIGHT, 2, 0));
+        btnPanel.add(expandAllBtn);
+        btnPanel.add(collapseAllBtn);
+        titleRow.add(btnPanel, BorderLayout.EAST);
+
         projectSearchField = UiFactory.searchField("Search projects...");
         JTextField searchField = projectSearchField;
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -162,7 +182,7 @@ public class RPAProjectManager extends JFrame {
             }
         });
 
-        JPanel topPanel = UiFactory.headerBlock(titleLabel, searchField);
+        JPanel topPanel = UiFactory.headerBlock(titleRow, searchField);
 
         // Build Tree
         rootNode = new DefaultMutableTreeNode("RPA Projects");

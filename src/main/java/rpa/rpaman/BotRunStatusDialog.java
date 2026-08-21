@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Runs each project's configured Received/Pending/Processed queries against its
@@ -29,6 +30,8 @@ public class BotRunStatusDialog extends JDialog {
     private final DefaultTableModel tableModel;
     private final JTable statusTable;
     private final JButton refreshBtn;
+    private final JProgressBar progressBar;
+    private final JLabel statusLabel;
     private final Map<Integer, String> rowErrors = new HashMap<>();
 
     public BotRunStatusDialog(Frame owner, DatabaseManager dbManager, List<String> projectNames) {
@@ -97,10 +100,24 @@ public class BotRunStatusDialog extends JDialog {
         root.add(tableCard, BorderLayout.CENTER);
 
         // ------------------------------------------------------------ footer
-        JPanel footer = UiFactory.transparent(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel footer = UiFactory.transparent(new BorderLayout(12, 0));
+
+        progressBar = new JProgressBar();
+        progressBar.setPreferredSize(new Dimension(200, 20));
+        progressBar.setStringPainted(true);
+
+        statusLabel = UiFactory.subtitle("");
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 12f));
+
+        JPanel progressPanel = UiFactory.transparent(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        progressPanel.add(progressBar);
+        progressPanel.add(statusLabel);
+
         JButton closeBtn = UiFactory.secondary("Close", null);
         closeBtn.addActionListener(e -> dispose());
-        footer.add(closeBtn);
+
+        footer.add(progressPanel, BorderLayout.CENTER);
+        footer.add(closeBtn, BorderLayout.EAST);
         root.add(footer, BorderLayout.SOUTH);
 
         setContentPane(root);
@@ -112,11 +129,23 @@ public class BotRunStatusDialog extends JDialog {
     private void refresh() {
         refreshBtn.setEnabled(false);
         refreshBtn.setText("Refreshing...");
+        progressBar.setValue(0);
+        statusLabel.setText("Starting...");
 
-        new SwingWorker<List<StatusRow>, Void>() {
+        new SwingWorker<List<StatusRow>, ProgressUpdate>() {
             @Override
             protected List<StatusRow> doInBackground() {
-                return collectRows();
+                return collectRows(update -> publish(update));
+            }
+
+            @Override
+            protected void process(List<ProgressUpdate> chunks) {
+                if (!chunks.isEmpty()) {
+                    ProgressUpdate last = chunks.get(chunks.size() - 1);
+                    progressBar.setMaximum(last.total);
+                    progressBar.setValue(last.current);
+                    statusLabel.setText(last.message);
+                }
             }
 
             @Override
@@ -141,13 +170,25 @@ public class BotRunStatusDialog extends JDialog {
 
                 refreshBtn.setText("Refresh Status");
                 refreshBtn.setEnabled(true);
+                progressBar.setValue(progressBar.getMaximum());
+                statusLabel.setText("");
             }
         }.execute();
     }
 
     /** Builds one row per machine, running the project's queries for each. */
-    private List<StatusRow> collectRows() {
+    private List<StatusRow> collectRows(Consumer<ProgressUpdate> progressConsumer) {
         List<StatusRow> rows = new ArrayList<>();
+
+        int totalQueries = 0;
+        for (String project : projectNames) {
+            List<String[]> machines = dbManager.getMachines(project);
+            int count = machines.isEmpty() ? 1 : machines.size();
+            totalQueries += count * 3;
+        }
+        if (totalQueries == 0) totalQueries = 1;
+
+        int currentQuery = 0;
 
         for (String project : projectNames) {
             String[] config = dbManager.getProjectConfig(project);
@@ -163,9 +204,19 @@ public class BotRunStatusDialog extends JDialog {
                 row.user = machine.length > 1 ? machine[1] : "";
 
                 StringBuilder errors = new StringBuilder();
+
+                currentQuery++;
+                progressConsumer.accept(new ProgressUpdate(currentQuery, totalQueries, project + " - [Received Query]"));
                 row.received = runQuery(dbPath, config[1], row, errors, "Received");
+
+                currentQuery++;
+                progressConsumer.accept(new ProgressUpdate(currentQuery, totalQueries, project + " - [Pending Query]"));
                 row.pending = runQuery(dbPath, config[2], row, errors, "Pending");
+
+                currentQuery++;
+                progressConsumer.accept(new ProgressUpdate(currentQuery, totalQueries, project + " - [Processed Query]"));
                 row.processed = runQuery(dbPath, config[3], row, errors, "Processed");
+
                 row.error = errors.toString();
 
                 rows.add(row);
@@ -187,6 +238,20 @@ public class BotRunStatusDialog extends JDialog {
             if (errors.length() > 0) errors.append('\n');
             errors.append(label).append(": ").append(ex.getMessage());
             return EMPTY;
+        }
+    }
+
+    // --------------------------------------------------------- progress model
+
+    private static final class ProgressUpdate {
+        final int current;
+        final int total;
+        final String message;
+
+        ProgressUpdate(int current, int total, String message) {
+            this.current = current;
+            this.total = total;
+            this.message = message;
         }
     }
 
